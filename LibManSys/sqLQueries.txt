@@ -1,0 +1,144 @@
+LIBRARY MANAGEMENT SYSTEM : FEDORA
+
+1. Names of members who have borrowed the same book more than once.
+
+SELECT DISTINCT Member.Member_Name
+FROM Member AS Member
+JOIN (
+    SELECT Borrower_Id,Acc_No,count(*)
+    FROM Borrowal
+    GROUP BY Borrower_Id,Acc_No
+    HAVING COUNT(*) > 1
+    )  AS Borrower ON Member.Member_Id = Borrower.Borrower_Id;
+
+
+
+
+2. Display the member name of the members and book title of the books taken by them.
+
+SELECT Member_Name AS Name ,Title AS Novel
+    FROM Member JOIN (SELECT Borrower_Id,Title
+        FROM BOOK Natural JOIN (SELECT Borrower_Id,ISBN
+            FROM Book_Copy JOIN(SELECT Borrower_Id,Acc_No
+                FROM Borrowal) AS Borrow ON Book_Copy.Acc_No=Borrow.Acc_No) AS Data) AS Doc ON Member.Member_Id=Doc.Borrower_Id;
+
+
+
+
+
+3. Members who have been fined for late return of the borrowed book. Display Member names with their respective Fine amount.
+
+SELECT Member_Name, ((Actual_Return_Date-Borrowed_From_Date)*Late_Fine_Rate) AS Fine
+    From Member Join Borrowal ON Member_Id=Borrower_Id,(
+    SELECT Late_Fine_Rate
+    FROM Branch 
+    ) AS Late_Fine_Rate
+WHERE Actual_Return_Date > Borrowed_To_Date;
+
+
+
+
+4. Books in the library written by John Green.
+
+SELECT Title,Author
+FROM Book
+WHERE Author='John Green';
+
+
+
+5. List the name of the members and the number of books they read sorted by BookCount. Also list the students who have never read a book.
+
+SELECT Member_Name,COUNT(Borrower_Id) 
+FROM Member LEFT JOIN Borrowal ON Member_Id=Borrower_Id
+GROUP BY Member_Name
+ORDER BY COUNT(Borrower_Id)
+
+
+
+6. Members who have not borrowed(Transacted) any book in the past.
+
+(
+    SELECT Member_Name AS Infrequent_Members
+    FROM Member 
+)
+    EXCEPT
+(
+    SELECT DISTINCT(Member_Name)
+    FROM Member JOIN Borrowal ON Member_Id=Borrower_Id
+);
+
+
+
+7. Display Book details and Shelf no. of the respective books available on the 1st floor of the Library.
+
+SELECT *
+FROM Book NATURAL JOIN 
+    (
+    SELECT Shelf_NO,ISBN
+    FROM Books_Branch_Contains
+    ) AS Shelf
+WHERE Shelf_No LIKE 'F1%';
+
+
+
+8. Display the title,author and genre of the Books based on publications they handle
+
+SELECT Supplier_Id,Title,Author,Genre
+FROM Book LEFT OUTER JOIN Supplier ON BOOK.Publication=Supplier.Publication; 
+
+
+
+9. Most Popular book in the Library.
+
+SELECT Title,borr_sum
+FROM BOOK NATURAL JOIN
+(
+    SELECT data1.ISBN AS ISBN ,SUM(data2.borr_count) AS borr_sum
+    FROM (SELECT Acc_No,ISBN FROM Book_copy) AS data1 JOIN (SELECT Acc_No , COUNT(Acc_No) AS borr_count
+    FROM borrowal GROUP BY Acc_No) AS data2 ON data1.Acc_No = data2.Acc_No
+    GROUP BY data1.ISBN
+)AS data3
+ORDER BY borr_sum DESC;
+
+
+
+10. Select all the members who have read either of : 'The thorn birds','Fault in our stars','Da Vinci Code'.
+
+SELECT (member_name)
+FROM member m,borrowal br,book_copy bc,book b
+WHERE m.member_id=br.borrower_id
+      AND br.acc_no=bc.acc_no 
+      AND bc.isbn=b.isbn 
+      AND b.title 
+      IN('Fault In Our Stars','The Thorn Birds','The Da Vinci Code');
+
+
+
+11. Select all the members who have borrowed books but not returned yet.
+
+SELECT member_name,phone_no 
+FROM member m WHERE NOT EXISTS
+    (SELECT actual_return_date 
+    FROM borrowal b
+     WHERE b.borrower_id=m.member_id
+    );
+
+
+
+12. Display Books and their respective Acc_No that are available in the library on 11th of March(i.e Not booked).
+
+SELECT DISTINCT(Title,Acc_No)
+FROM BOOK NATURAL JOIN Book_Copy NATURAL JOIN Borrowal
+WHERE '2019-03-11' NOT BETWEEN Borrowed_From_Date AND Borrowed_To_Date;
+
+
+
+13. Select all members who are reading multiple books.
+
+SELECT member_name
+FROM member
+WHERE(
+    SELECT COUNT(*) FROM borrowal 
+    WHERE member_id = borrower_id
+    )>1;
+

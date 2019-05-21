@@ -1,0 +1,15 @@
+1) Select all the members who have read either of : 'The thorn birds','Fault in our stars','Da Vinci Code'.
+
+2)Select all the members who have borrowed books but not returned yet.
+ 
+3)Select all members who are reading multiple books.
+ 
+ 
+ ans1)
+ select member_name from member m,borrowal br,book_copy bc,book b where m.member_id=br.borrower_id and br.acc_no=bc.acc_no and bc.isbn=b.isbn and b.title in('Fault In Our Stars','The Thorn Birds','The Da Vinci Code');
+ 
+ ans2)
+ select member_name,phone_no from member m where not exists(select actual_return_date from borrowal b where b.borrower_id=m.member_id);
+ 
+ ans3)
+select member_name from member where (select count(*) from borrowal where member_id = borrower_id)>1;
